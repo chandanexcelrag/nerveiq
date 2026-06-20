@@ -28,6 +28,26 @@ function sanitiseText(val) {
   return val.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
 }
 
+/**
+ * Detects basic script injection, HTML/XSS payloads, or spam URL patterns.
+ * @param {string} text - The text to check.
+ * @returns {boolean} True if dangerous patterns are found, false otherwise.
+ */
+function containsDangerousContent(text) {
+  if (typeof text !== 'string') return false;
+
+  // Look for script tags, javascript: URIs, or typical inline handlers like onload/onerror
+  const scriptRegex = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+  const inlineHandlerRegex = /\bon[a-z]+\s*=/i;
+  const javascriptUriRegex = /javascript:/i;
+
+  // Reject excessive URLs/HTTP links (e.g. more than 3 links) to protect against spam / script links
+  const urlRegex = /https?:\/\/[^\s]+/gi;
+  const urls = text.match(urlRegex) || [];
+
+  return scriptRegex.test(text) || inlineHandlerRegex.test(text) || javascriptUriRegex.test(text) || urls.length > 3;
+}
+
 function validateCheckin(req, res, next) {
   const { mood, journal, subject, examTarget, daysLeft } = req.body || {};
 
@@ -42,6 +62,8 @@ function validateCheckin(req, res, next) {
     errors.push('journal is required and must be text.');
   } else if (journal.length > MAX_JOURNAL_LENGTH) {
     errors.push(`journal must be under ${MAX_JOURNAL_LENGTH} characters.`);
+  } else if (containsDangerousContent(journal)) {
+    errors.push('journal contains blocked content or scripting patterns.');
   }
 
   if (subject !== undefined && !ALLOWED_SUBJECTS.includes(subject)) {
@@ -80,6 +102,9 @@ function validateChat(req, res, next) {
   }
   if (message.length > MAX_JOURNAL_LENGTH) {
     return res.status(400).json({ error: `message must be under ${MAX_JOURNAL_LENGTH} characters.` });
+  }
+  if (containsDangerousContent(message)) {
+    return res.status(400).json({ error: 'message contains blocked content or scripting patterns.' });
   }
   if (examTarget !== undefined && !ALLOWED_EXAM_TARGETS.includes(examTarget)) {
     return res.status(400).json({ error: `examTarget must be one of: ${ALLOWED_EXAM_TARGETS.join(', ')}.` });

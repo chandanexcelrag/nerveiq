@@ -19,7 +19,8 @@ const { calculateBurnout } = require('../src/services/burnoutEngine');
 const { buildSubjectMatrix } = require('../src/services/subjectMatrix');
 const { buildEvidence } = require('../src/services/resilienceReceipt');
 const { pickMissionType } = require('../src/services/missionGenerator');
-const { sanitiseText, validatePlanner, validateFlashcards } = require('../src/middleware/validate');
+const { sanitiseText, validatePlanner, validateFlashcards, validateCheckin, validateChat } = require('../src/middleware/validate');
+const { computeStreaks } = require('../src/routes/nerveMapRoutes');
 
 let passed = 0;
 let failed = 0;
@@ -366,6 +367,163 @@ test('detects multiple distortions in a single complex sentence', () => {
   assert.ok(types.includes('selfLabeling'));
   assert.ok(types.includes('fortuneTelling'));
   assert.ok(types.includes('catastrophizing'));
+});
+
+// ===================== computeStreaks =====================
+section('computeStreaks');
+
+test('correctly calculates current and longest streaks', () => {
+  const entries = [
+    { date: '2026-06-01', burnoutLevel: 'safe' },
+    { date: '2026-06-02', burnoutLevel: 'safe' },
+    { date: '2026-06-03', burnoutLevel: 'watch' },
+    { date: '2026-06-04', burnoutLevel: 'safe' },
+    { date: '2026-06-05', burnoutLevel: 'safe' },
+    { date: '2026-06-06', burnoutLevel: 'safe' },
+    { date: '2026-06-07', burnoutLevel: 'danger' },
+    { date: '2026-06-08', burnoutLevel: 'safe' }
+  ];
+  const result = computeStreaks(entries);
+  // Longest green streak should be 3 (June 4, 5, 6)
+  assert.strictEqual(result.longestGreen, 3);
+  // Current streak (trailing from end) should be 1 (June 8)
+  assert.strictEqual(result.currentGreen, 1);
+});
+
+test('returns zero streaks for empty entries', () => {
+  const result = computeStreaks([]);
+  assert.strictEqual(result.currentGreen, 0);
+  assert.strictEqual(result.longestGreen, 0);
+});
+
+// ===================== additional validation / edge cases =====================
+section('additional validation / edge cases');
+
+test('sanitiseText handles very long strings containing control characters', () => {
+  const longCleanString = 'a'.repeat(2500);
+  const dirty = 'a'.repeat(1250) + '\u0007' + 'a'.repeat(1250);
+  const result = sanitiseText(dirty);
+  assert.strictEqual(result, longCleanString);
+});
+
+test('validateFlashcards rejects topic longer than 100 characters', () => {
+  const longTopic = 'a'.repeat(101);
+  const req = { body: { topic: longTopic } };
+  let statusSet = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validateFlashcards(req, res, next);
+  assert.strictEqual(statusSet, 400);
+});
+
+test('validatePlanner rejects invalid examTarget', () => {
+  const req = { body: { examTarget: 'INVALID_EXAM_NAME' } };
+  let statusSet = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validatePlanner(req, res, next);
+  assert.strictEqual(statusSet, 400);
+});
+
+test('validatePlanner rejects negative hoursStudied', () => {
+  const req = { body: { hoursStudied: -5 } };
+  let statusSet = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validatePlanner(req, res, next);
+  assert.strictEqual(statusSet, 400);
+});
+
+test('validateCheckin rejects script tags in journal', () => {
+  const req = {
+    body: {
+      mood: 5,
+      journal: 'Studied maths <script>alert(1)</script>'
+    }
+  };
+  let statusSet = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validateCheckin(req, res, next);
+  assert.strictEqual(statusSet, 400);
+});
+
+test('validateChat rejects script tags or excessive URLs in message', () => {
+  const req1 = { body: { message: 'Hello <img src="x" onerror="alert(1)">' } };
+  let statusSet1 = null;
+  const res1 = {
+    status(s) {
+      statusSet1 = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validateChat(req1, res1, next);
+  assert.strictEqual(statusSet1, 400);
+
+  const req2 = { body: { message: 'http://a.com http://b.com http://c.com http://d.com' } };
+  let statusSet2 = null;
+  const res2 = {
+    status(s) {
+      statusSet2 = s;
+      return this;
+    },
+    json() {}
+  };
+
+  validateChat(req2, res2, next);
+  assert.strictEqual(statusSet2, 400);
+});
+
+
+test('buildSubjectMatrix aggregates multiple subjects and multiple entries', () => {
+  const entries = [
+    { subject: 'Maths', burnoutScore: 50 },
+    { subject: 'Maths', burnoutScore: 60 },
+    { subject: 'Physics', burnoutScore: 80 },
+    { subject: 'Physics', burnoutScore: 90 },
+    { subject: 'Chemistry', burnoutScore: 40 }
+  ];
+  const { matrix, ranked } = buildSubjectMatrix(entries);
+  // Average for Maths is 55, Physics is 85, Chemistry is 40
+  assert.strictEqual(matrix.Maths, 55);
+  assert.strictEqual(matrix.Physics, 85);
+  assert.strictEqual(matrix.Chemistry, 40);
+  // Physics is highest stress, should be first
+  assert.strictEqual(ranked[0].subject, 'Physics');
+  assert.strictEqual(ranked[0].avgScore, 85);
+  assert.strictEqual(ranked[1].subject, 'Maths');
+  assert.strictEqual(ranked[2].subject, 'Chemistry');
 });
 
 // ===================== Summary =====================

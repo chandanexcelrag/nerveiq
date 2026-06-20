@@ -1342,22 +1342,44 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emotions, burnoutLevel, type: randomType })
       });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch mission content');
+      }
+
       const mission = await res.json();
       state.currentMission = mission;
 
-      document.getElementById('missionType').textContent = mission.type;
-      document.getElementById('missionTitleText').textContent = mission.title;
+      document.getElementById('missionType').textContent = mission.type || 'breathing';
+      document.getElementById('missionTitleText').textContent = mission.title || 'Reset Breath';
       
       const list = document.getElementById('missionStepsList');
       list.innerHTML = '';
-      mission.instructions.forEach(step => {
+      const instructions = Array.isArray(mission.instructions) ? mission.instructions : [];
+      instructions.forEach(step => {
         const li = document.createElement('li');
         li.textContent = step;
         list.appendChild(li);
       });
       missionBoxCard.style.display = 'block';
     } catch (e) {
-      console.error(e);
+      console.error('Error fetching adaptive mission:', e);
+      // Fallback UI rendering in case of error
+      document.getElementById('missionType').textContent = 'breathing';
+      document.getElementById('missionTitleText').textContent = 'Reset Breath';
+      const list = document.getElementById('missionStepsList');
+      list.innerHTML = '';
+      const fallbackSteps = [
+        'Sit somewhere quiet and set a 4-minute timer.',
+        'Breathe in for 4 counts, hold for 4, out for 6 - repeat for the full timer.',
+        'When the timer ends, write one word for how you feel now.'
+      ];
+      fallbackSteps.forEach(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        list.appendChild(li);
+      });
+      missionBoxCard.style.display = 'block';
     }
   }
 

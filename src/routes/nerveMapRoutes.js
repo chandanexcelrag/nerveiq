@@ -65,4 +65,5 @@ router.get('/nervemap', (req, res, next) => {
   }
 });
 
+router.computeStreaks = computeStreaks;
 module.exports = router;
