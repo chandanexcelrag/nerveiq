@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+npm-debug.log*
+.DS_Store
+*.log
+
+# Keep the data folder but ignore generated entries so each deploy starts clean
+# (remove this line if you WANT entries.json committed for demo seed data)
+data/entries.json

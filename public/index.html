@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NerveIQ — Your Next-Gen Exam Mental OS</title>
+<meta name="description" content="NerveIQ tracks your emotional patterns through exam prep and gives you evidence-based, personalized support using generative AI." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090E;
+    --surface-glass: rgba(13, 17, 28, 0.7);
+    --surface-raised: rgba(22, 29, 48, 0.9);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(139, 92, 246, 0.3);
+    --text: #F9FAFB;
+    --text-dim: #9CA3AF;
+    --text-faint: #4B5563;
+    
+    --accent: #8B5CF6; /* Electric Violet */
+    --accent-glow: rgba(139, 92, 246, 0.4);
+    --accent-secondary: #F59E0B; /* Amber */
+    --accent-secondary-glow: rgba(245, 158, 11, 0.35);
+    
+    --danger: #EF4444;
+    --watch: #F59E0B;
+    --safe: #10B981;
+    
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 20px;
+    --radius-sm: 10px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  #starfieldCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  /* Expanded Desktop Layout Shell */
+  .app-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 94px;
+    position: relative;
+  }
+
+  /* Responsive Grid Wrapper */
+  .grid-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  @media (min-width: 900px) {
+    .grid-layout {
+      grid-template-columns: 1.6fr 1fr;
+    }
+  }
+
+  /* ---------- HEADER ---------- */
+  header.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 20px 16px;
+    background: rgba(7, 9, 14, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand .mark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #FFFFFF 40%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brand .tagline {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: #A78BFA;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 99px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .days-left-chip {
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .days-left-chip strong { color: var(--accent-secondary); font-family: var(--font-mono); font-size: 13px; }
+
+  main { flex: 1; padding: 16px 20px; }
+
+  /* ---------- SCREEN VISIBILITY & TRANSITION ---------- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- PREMIUM GLASS CARD ---------- */
+  .card {
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4);
+    transition: var(--transition);
+  }
+  .card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 10px 40px 0 rgba(139, 92, 246, 0.08);
+  }
+
+  .card h2 {
+    font-family: var(--font-display);
+    font-size: 21px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ---------- 3D EMOJI EFFECT DESIGN ---------- */
+  .emoji-3d {
+    display: inline-block;
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+    transform: perspective(100px) translateZ(10px) rotateX(4deg);
+    transition: var(--transition);
+    transform-style: preserve-3d;
+  }
+  .emoji-3d:hover {
+    transform: perspective(100px) translateZ(20px) scale(1.3) rotateY(10deg);
+  }
+  .emoji-3d-lg {
+    font-size: 32px;
+  }
+
+  .field { margin-bottom: 22px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* ---------- MOOD DIAL ---------- */
+  .mood-row {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+  }
+  .mood-btn {
+    flex: 1;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface-glass);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mood-btn:hover {
+    transform: scale(1.15);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .mood-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+
+  textarea, select, input {
+    width: 100%;
+    background: rgba(7, 9, 14, 0.65);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    padding: 14px;
+    transition: var(--transition);
+  }
+  textarea:focus, select:focus, input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  textarea { resize: vertical; min-height: 110px; }
+
+  .char-count { font-size: 11px; color: var(--text-faint); text-align: right; margin-top: 4px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, #6D28D9 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 5px 18px var(--accent-glow);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 13px;
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--text); background: rgba(139, 92, 246, 0.05); }
+
+  /* ---------- BURNOUT RING ---------- */
+  .result-grid {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .burnout-ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .burnout-ring-wrap svg { transform: rotate(-90deg); }
+  .burnout-ring-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .burnout-ring-label .num { font-family: var(--font-mono); font-size: 26px; font-weight: 800; }
+  .burnout-ring-label .lvl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+
+  .emotion-pills { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+  .pill {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .trigger-note {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+
+  /* ---------- CRISIS BANNER ---------- */
+  .crisis-banner {
+    display: none;
+    background: linear-gradient(135deg, #4C0519, #1E000A);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 25px rgba(239, 68, 68, 0.25);
+  }
+  .crisis-banner.show { display: block; }
+  .crisis-banner h3 {
+    margin-bottom: 6px;
+    font-size: 15px;
+    color: #FECDD3;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .crisis-banner p { margin: 0; font-size: 13px; color: var(--text-dim); }
+
+  /* ---------- RESILIENCE RECEIPT ---------- */
+  .receipt {
+    background: #FCFAF6;
+    color: #111827;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    border-radius: 6px;
+    padding: 24px 20px;
+    position: relative;
+    margin-bottom: 20px;
+    line-height: 1.8;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  }
+  .receipt::before, .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 8px;
+    background: radial-gradient(circle, var(--bg) 4px, transparent 4.5px);
+    background-size: 14px 14px;
+    background-repeat: repeat-x;
+  }
+  .receipt::before { top: -4px; }
+  .receipt::after { bottom: -4px; }
+  
+  .receipt .r-head {
+    text-align: center;
+    border-bottom: 1px dashed #4B5563;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+  .receipt .r-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4B5563;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+  .receipt .r-body { margin-bottom: 14px; }
+  .receipt .r-foot {
+    border-top: 1px dashed #4B5563;
+    padding-top: 12px;
+    font-size: 11px;
+    color: #4B5563;
+    text-align: center;
+  }
+
+  /* ---------- ADAPTIVE MISSION ENGINE ---------- */
+  .mission-box {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 10px;
+  }
+  .mission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .mission-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .mission-timer {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-secondary);
+  }
+  .mission-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    font-family: var(--font-display);
+  }
+  .mission-steps {
+    list-style-type: decimal;
+    padding-left: 20px;
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .mission-steps li { margin-bottom: 6px; }
+
+  /* ---------- OMR GRID HEATMAP ---------- */
+  .omr-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+  }
+  .omr-bubble {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .omr-bubble:hover { border-color: var(--accent); transform: scale(1.22); }
+  .omr-bubble.filled-safe { background: var(--safe); border-color: var(--safe); box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+  .omr-bubble.filled-watch { background: var(--watch); border-color: var(--watch); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+  .omr-bubble.filled-danger { background: var(--danger); border-color: var(--danger); box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+  .omr-bubble.empty { opacity: 0.15; }
+  
+  .omr-legend { display: flex; gap: 14px; margin-top: 14px; font-size: 11px; color: var(--text-dim); }
+  .omr-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .omr-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .omr-detail-panel {
+    background: rgba(13, 17, 28, 0.95);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  /* ---------- CBT DISTORTION COACHING PANEL ---------- */
+  .coaching-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .coaching-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: var(--transition);
+  }
+  .coaching-card:hover { border-color: var(--accent); }
+  .coaching-card h4 { font-size: 14px; font-weight: 700; color: var(--accent-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .coaching-card p.desc { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+  .coaching-card .reframe-box { background: rgba(16, 185, 129, 0.05); border-left: 3px solid var(--safe); padding: 8px 10px; font-size: 12px; color: var(--text); }
+
+  /* ---------- MINDFULNESS SCREEN ---------- */
+  .session-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    transition: var(--transition);
+  }
+  .session-card:hover {
+    background: rgba(139, 92, 246, 0.06);
+    border-color: rgba(139, 92, 246, 0.35);
+    transform: translateX(6px);
+  }
+  .session-icon { font-size: 32px; }
+  .session-details { flex: 1; }
+  .session-details h3 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .session-details p { font-size: 12px; color: var(--text-dim); }
+  .session-time { font-family: var(--font-mono); font-size: 12px; color: var(--accent-secondary); }
+
+  .player-modal { display: none; text-align: center; }
+  .player-modal.active { display: block; animation: fadeIn 0.3s ease; }
+  .breathing-container { display: flex; justify-content: center; align-items: center; height: 200px; margin: 24px 0; }
+  
+  .breathing-orb {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent) 0%, #6D28D9 100%);
+    box-shadow: 0 0 35px var(--accent-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    transition: all 4s ease-in-out;
+  }
+  .breathing-orb.inhale { width: 170px; height: 170px; box-shadow: 0 0 60px rgba(139, 92, 246, 0.7); }
+  .breathing-orb.hold { box-shadow: 0 0 60px rgba(245, 158, 11, 0.6); background: radial-gradient(circle, var(--accent-secondary) 0%, #D97706 100%); }
+  .breathing-orb.exhale { width: 80px; height: 80px; box-shadow: 0 0 25px rgba(139, 92, 246, 0.25); }
+
+  .player-instruction { font-size: 20px; font-family: var(--font-display); font-weight: 600; margin-bottom: 20px; height: 30px; color: var(--text); }
+  .player-timer { font-family: var(--font-mono); font-size: 32px; font-weight: 700; margin-bottom: 24px; color: var(--accent-secondary); }
+
+  /* ---------- INSIGHTS SCREEN ---------- */
+  .chart-container { height: 150px; margin: 18px 0; display: flex; align-items: flex-end; }
+  .sparkline-svg { width: 100%; height: 100%; }
+  .insight-highlight { background: rgba(245, 158, 11, 0.05); border-left: 3px solid var(--accent-secondary); padding: 14px; border-radius: 0 10px 10px 0; font-size: 13.5px; color: var(--text-dim); margin-top: 14px; }
+  .insight-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat-card { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-card .val { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+  .stat-card .lbl { font-size: 10px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; font-weight: 800; }
+
+  /* ---------- CHAT SCREEN ---------- */
+  .chat-card { display: flex; flex-direction: column; height: calc(100vh - 240px); min-height: 420px; }
+  .chat-log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+  .bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14.5px; line-height: 1.6; }
+  .bubble.student { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 12px var(--accent-glow); }
+  .bubble.senior { align-self: flex-start; background: var(--surface-raised); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .bubble.system-note { align-self: center; font-size: 11px; color: var(--text-faint); background: none; text-align: center; }
+
+  .quick-chips-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 4px; border-top: 1px solid var(--border); }
+  .quick-chips-row::-webkit-scrollbar { display: none; }
+  .chip-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-dim); padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; white-space: nowrap; transition: var(--transition); }
+  .chip-btn:hover { border-color: var(--accent); color: var(--text); background: rgba(139, 92, 246, 0.05); }
+
+  .chat-input-row { display: flex; gap: 8px; align-items: flex-end; padding-top: 10px; }
+  .chat-input-row textarea { min-height: 44px; max-height: 110px; padding: 12px 16px; font-size: 14.5px; border-radius: 24px; }
+  .mic-btn, .send-btn { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text); font-size: 18px; display: flex; align-items: center; justify-content: center; transition: var(--transition); cursor: pointer; }
+  .send-btn { background: var(--accent); color: white; border: none; }
+  .send-btn:hover { transform: scale(1.08); }
+  
+  .mic-btn[aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: white; animation: voicePulse 1.4s infinite; }
+  .audio-indicator { display: none; align-items: center; justify-content: center; gap: 4px; height: 24px; margin: 8px auto; }
+  .audio-indicator.active { display: flex; }
+  .audio-bar { width: 3px; height: 8px; background: var(--accent); border-radius: 99px; animation: bounce 1s ease-in-out infinite; }
+  .audio-bar:nth-child(2) { animation-delay: 0.15s; }
+  .audio-bar:nth-child(3) { animation-delay: 0.3s; }
+  .audio-bar:nth-child(4) { animation-delay: 0.45s; }
+  
+  @keyframes bounce { 0%, 100% { height: 8px; } 50% { height: 24px; } }
+
+  /* ---------- NEW PRODUCT LEVEL TABS ---------- */
+  .badge-container { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .badge-item.active { border-color: var(--safe); background: rgba(16, 185, 129, 0.05); }
+
+  .ambient-mixer { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px; }
+  .mixer-track { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 10px; border-radius: 8px; }
+  .mixer-track button { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-dim); transition: var(--transition); }
+  .mixer-track button.active { color: var(--accent); }
+
+  /* ---------- BOTTOM NAV ---------- */
+  nav.bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(7, 9, 14, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    z-index: 1000;
+  }
+  nav.bottom-nav button {
+    flex: 1; background: none; border: none; color: var(--text-dim);
+    padding: 16px 0; font-size: 10px;
+    font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  nav.bottom-nav button .nav-icon { font-size: 19px; transition: var(--transition); }
+  nav.bottom-nav button:hover { color: var(--text); }
+  nav.bottom-nav button:hover .nav-icon { transform: translateY(-3px); }
+  nav.bottom-nav button[aria-current="true"] { color: var(--accent); }
+  nav.bottom-nav button[aria-current="true"] .nav-icon { transform: translateY(-3px); }
+</style>
+</head>
+<body>
+
+<canvas id="starfieldCanvas"></canvas>
+
+<div class="app-shell">
+  <header class="top-bar">
+    <div class="brand">
+      <span class="mark">NerveIQ</span>
+      <span class="tagline">Exam mental OS</span>
+    </div>
+    
+    <!-- Panic Trigger Button -->
+    <button class="btn-secondary" id="panicTriggerBtn" style="border-color: var(--danger); color: var(--danger); font-weight: 700; padding: 6px 12px; border-radius: 99px; display: flex; align-items: center; gap: 6px;">
+      <span class="emoji-3d">🚨</span> PANIC / OVERWHELM
+    </button>
+    
+    <div class="days-left-chip" id="daysLeftChip" aria-live="polite">
+      <span class="emoji-3d">⏱️</span> <strong id="daysLeftNum">—</strong> days left
+    </div>
+  </header>
+
+  <main>
+    <div class="grid-layout">
+      <!-- Main Content Column -->
+      <div class="main-column">
+        
+        <!-- ============ SCREEN 1: CHECK-IN ============ -->
+        <section class="screen active" id="screen-checkin" aria-labelledby="checkin-heading">
+          <div class="crisis-banner" id="crisisBanner" role="alert" aria-live="assertive">
+            <h3>⚠️ Please pause for a second</h3>
+            <p id="crisisBannerText">What you wrote matters. Please reach out right now to a parent, teacher, or trusted adult, or call a helpline. You don't have to carry this alone today.</p>
+          </div>
+
+          <!-- CBT Quick Templates -->
+          <div class="card">
+            <h2><span class="emoji-3d">📝</span> CBT Journaling Templates</h2>
+            <p style="font-size:11px; color:var(--text-dim); margin-top:-8px; margin-bottom:12px;">Quick load template helper to jumpstart your daily diary entry.</p>
+            <div style="display:flex; gap:8px; overflow-x:auto;">
+              <button class="btn-secondary" onclick="loadJournalTemplate('failed_mock')" style="font-size:11px; padding:6px 12px; white-space:nowrap;">Failed Mock Exam</button>
+              <button class="btn-secondary" onclick="loadJournalTemplate('morning_anxiety')" style="font-size:11px; padding:6px 12px; white-space:nowrap;">Morning Anxiety</button>
+              <button class="btn-secondary" onclick="loadJournalTemplate('peer_pressure')" style="font-size:11px; padding:6px 12px; white-space:nowrap;">Comparison Pressure</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 id="checkin-heading">Today's Check-in</h2>
+
+            <div class="field">
+              <label for="moodGroup">How's your mood right now?</label>
+              <div class="mood-row" id="moodGroup" role="radiogroup" aria-labelledby="moodGroup-label"></div>
+            </div>
+
+            <div class="field">
+              <label for="journalInput">What's on your mind? Write freely — there's no wrong answer.</label>
+              <textarea id="journalInput" maxlength="2000" placeholder="e.g., failed mock test again, don't know what's even the point right now..." aria-describedby="charCount"></textarea>
+              <div class="char-count" id="charCount">0 / 2000</div>
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="subjectSelect">Subject studied today</label>
+                <select id="subjectSelect">
+                  <option>Physics</option>
+                  <option>Chemistry</option>
+                  <option>Maths</option>
+                  <option>Biology</option>
+                  <option selected>General Studies</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="examSelect">Exam target</label>
+                <select id="examSelect">
+                  <option>JEE</option>
+                  <option>NEET</option>
+                  <option>CUET</option>
+                  <option>CAT</option>
+                  <option>GATE</option>
+                  <option>UPSC</option>
+                  <option selected>Boards</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Sleep & Study Tracker -->
+            <div class="row-2">
+              <div class="field">
+                <label for="studyHoursInput">Hours Studied Today</label>
+                <input type="number" id="studyHoursInput" min="0" max="24" placeholder="8" />
+              </div>
+              <div class="field">
+                <label for="sleepHoursInput">Hours Slept Last Night</label>
+                <input type="number" id="sleepHoursInput" min="0" max="24" placeholder="7" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="daysLeftInput">Days left until exam</label>
+              <input type="number" id="daysLeftInput" min="0" max="3650" placeholder="e.g. 47" />
+            </div>
+
+            <button class="btn-primary" id="submitCheckin">Log check-in</button>
+          </div>
+
+          <!-- Adaptive Mission Box -->
+          <div class="card" id="missionBoxCard" style="display:none;">
+            <h2><span class="emoji-3d">🎯</span> Today's Adaptive Mission</h2>
+            <div class="mission-box">
+              <div class="mission-header">
+                <span class="mission-badge" id="missionType">Coping</span>
+                <span class="mission-timer" id="missionTimerText">04:00</span>
+              </div>
+              <div class="mission-title" id="missionTitleText">Reset Breathing</div>
+              <ol class="mission-steps" id="missionStepsList"></ol>
+              <button class="btn-primary" id="startMissionBtn">Start 4-Min Timer</button>
+            </div>
+          </div>
+
+          <div class="card" id="resultCard" style="display:none;" aria-live="polite">
+            <h2>Analysis Results</h2>
+            <div class="result-grid">
+              <div class="burnout-ring-wrap">
+                <svg width="100" height="100" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" stroke-width="8" />
+                  <circle id="ringProgress" cx="50" cy="50" r="42" fill="none" stroke="var(--safe)" stroke-width="8"
+                    stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" />
+                </svg>
+                <div class="burnout-ring-label">
+                  <span class="num" id="burnoutNum">—</span>
+                  <span class="lvl" id="burnoutLvl">—</span>
+                </div>
+              </div>
+              <div class="emotion-pills" id="emotionPills"></div>
+            </div>
+            <div class="trigger-note" id="triggerNote"></div>
+          </div>
+
+          <div id="receiptContainer"></div>
+        </section>
+
+        <!-- ============ SCREEN 2: NERVE MAP ============ -->
+        <section class="screen" id="screen-nervemap" aria-labelledby="nervemap-heading">
+          <div class="card">
+            <h2 id="nervemap-heading">Your Nerve Map</h2>
+            <p style="font-size:12px; color:var(--text-dim); margin-top:-8px; margin-bottom:16px;">
+              Last 30 days OMR sheet heatmap — bubble per day. Click any bubble for log details.
+            </p>
+            <div class="omr-grid" id="omrGrid" role="img" aria-label="30 day emotional heatmap grid"></div>
+            <div class="omr-legend">
+              <span><span class="dot" style="background:var(--safe)"></span> Steady</span>
+              <span><span class="dot" style="background:var(--watch)"></span> Watch</span>
+              <span><span class="dot" style="background:var(--danger)"></span> Danger</span>
+              <span><span class="dot" style="background:rgba(255,255,255,0.05); border:1px solid var(--border)"></span> Empty</span>
+            </div>
+
+            <div class="omr-detail-panel" id="omrDetailPanel">
+              <div class="omr-detail-header">
+                <span id="detailDate">June 20, 2026</span>
+                <span id="detailBurnout">Burnout: 42%</span>
+              </div>
+              <div class="omr-detail-body" id="detailBody"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Subject Stress Matrix</h2>
+            <div id="subjectMatrixList"></div>
+          </div>
+
+          <div class="card">
+            <h2>Streaks</h2>
+            <div class="streak-row">
+              <div class="streak-box">
+                <div class="sb-num" id="currentStreakNum">0</div>
+                <div class="sb-lbl">Current steady streak</div>
+              </div>
+              <div class="streak-box">
+                <div class="sb-num" id="longestStreakNum">0</div>
+                <div class="sb-lbl">Longest steady streak</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SCREEN 3: MINDFULNESS PLAYER ============ -->
+        <section class="screen" id="screen-mindfulness" aria-labelledby="mindfulness-heading">
+          <div class="card" id="sessionListCard">
+            <h2 id="mindfulness-heading">Guided Mindfulness Player</h2>
+            <p style="font-size:12px; color:var(--text-dim); margin-top:-8px; margin-bottom:16px;">
+              Select a quick session to release pressure.
+            </p>
+            
+            <div class="session-card" data-session="box">
+              <div class="session-icon"><span class="emoji-3d emoji-3d-lg">🧘</span></div>
+              <div class="session-details">
+                <h3>Box Breathing</h3>
+                <p>Stabilize nervous system and regain clear focus.</p>
+              </div>
+              <div class="session-time">4 min</div>
+            </div>
+
+            <div class="session-card" data-session="ground">
+              <div class="session-icon"><span class="emoji-3d emoji-3d-lg">🌱</span></div>
+              <div class="session-details">
+                <h3>5-4-3-2-1 Grounding</h3>
+                <p>Anchor yourself when self-doubt or anxiety takes over.</p>
+              </div>
+              <div class="session-time">3 min</div>
+            </div>
+
+            <div class="session-card" data-session="scan">
+              <div class="session-icon"><span class="emoji-3d emoji-3d-lg">🛌</span></div>
+              <div class="session-details">
+                <h3>Quick Body Scan</h3>
+                <p>Release physical tension from sitting at study desk.</p>
+              </div>
+              <div class="session-time">5 min</div>
+            </div>
+          </div>
+
+          <div class="card player-modal" id="activePlayerCard">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+              <h2 id="currentPlayerTitle">Session</h2>
+              <button class="btn-secondary" id="exitPlayerBtn" style="padding:4px 10px;">Back</button>
+            </div>
+            
+            <div class="breathing-container">
+              <div class="breathing-orb" id="breathingOrb">Relax</div>
+            </div>
+
+            <div class="player-instruction" id="playerInstructionText">Ready...</div>
+            <div class="player-timer" id="playerTimerText">00:00</div>
+
+            <button class="btn-primary" id="controlSessionBtn">Start Session</button>
+            <button class="btn-secondary" id="voiceNarrationBtn" style="margin-top:10px; width:100%;">🔊 Voice Narration: ON</button>
+          </div>
+        </section>
+
+        <!-- ============ SCREEN 4: INSIGHTS & CBT COACH ============ -->
+        <section class="screen" id="screen-insights" aria-labelledby="insights-heading">
+          <div class="card">
+            <h2 id="insights-heading">Mood & Stress Trends</h2>
+            <div class="insight-stats">
+              <div class="stat-card">
+                <div class="val" id="statAvgMood">—</div>
+                <div class="lbl">Avg Mood</div>
+              </div>
+              <div class="stat-card">
+                <div class="val" id="statBurnoutAvg">—</div>
+                <div class="lbl">Avg Burnout</div>
+              </div>
+              <div class="stat-card">
+                <div class="val" id="statCheckins">—</div>
+                <div class="lbl">Checkins</div>
+              </div>
+            </div>
+
+            <div class="chart-container">
+              <svg class="sparkline-svg" id="sparklineSvg" viewBox="0 0 500 120" preserveAspectRatio="none">
+                <path id="sparklinePath" fill="none" stroke="var(--accent)" stroke-width="3" />
+                <path id="sparklineArea" fill="var(--accent-glow)" stroke="none" />
+              </svg>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-faint); margin-top:-8px; margin-bottom:12px;">
+              <span>30 Days Ago</span>
+              <span>Today</span>
+            </div>
+
+            <div class="insight-highlight" id="aiInsightText">
+              Log at least 3 entries to unlock AI mood patterns.
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>CBT Cognitive Reframe Coach</h2>
+            <div class="coaching-grid">
+              <div class="coaching-card">
+                <h4><span class="emoji-3d">🔮</span> Fortune Telling</h4>
+                <p class="desc">Predicting failure as a certain future fact (e.g. "I know I will fail the NEET exam").</p>
+                <div class="reframe-box"><strong>Reframe:</strong> "I cannot predict the future. All I can control is the study session in front of me right now."</div>
+              </div>
+              <div class="coaching-card">
+                <h4><span class="emoji-3d">💥</span> Catastrophizing</h4>
+                <p class="desc">Treating a minor setback as a total, permanent disaster (e.g. "Everything is ruined").</p>
+                <div class="reframe-box"><strong>Reframe:</strong> "It is a tough practice paper, but it is a learning checkpoint, not the final verdict."</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Cognitive Distortions Detected</h2>
+            <div id="distortionList">
+              <div class="empty-state">No distortion patterns detected yet. Good job!</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SCREEN 5: SENIOR CHAT ============ -->
+        <section class="screen" id="screen-chat" aria-labelledby="chat-heading">
+          <!-- Viva Simulator Toggle -->
+          <div class="card" style="padding: 12px 18px; margin-bottom:12px; border-color:var(--accent);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:13px; font-weight:700;"><span class="emoji-3d">🤖</span> Viva Oral Exam Simulator Mode</span>
+              <button class="btn-secondary" onclick="toggleVivaMode()" id="vivaToggleBtn" style="font-size:11px; padding:4px 10px;">Turn ON</button>
+            </div>
+          </div>
+
+          <div class="card chat-card">
+            <div class="voice-toggle-row">
+              <span class="vt-status">
+                <span id="voiceStatusDot" aria-hidden="true">🔇</span>
+                <span id="voiceStatusText">Text mode</span>
+              </span>
+              <button class="btn-secondary" id="voiceModeToggle" aria-pressed="false">Switch to voice</button>
+            </div>
+
+            <div class="chat-log" id="chatLog" aria-live="polite">
+              <div class="bubble system-note">You're talking to your Exam Senior — a peer voice, not a therapist. In a crisis, please contact a real person right away.</div>
+            </div>
+
+            <div class="audio-indicator" id="audioIndicator">
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+            </div>
+
+            <div class="quick-chips-row">
+              <button class="chip-btn" onclick="sendQuickPrompt('How should I manage my time during the last week before the exam?')">Last week prep strategy?</button>
+              <button class="chip-btn" onclick="sendQuickPrompt('I failed my mock test today. How do I bounce back without losing confidence?')">Failed mock test reset</button>
+              <button class="chip-btn" onclick="sendQuickPrompt('How do I handle pressure from parent expectations?')">Handling parent pressure</button>
+            </div>
+
+            <div class="chat-input-row">
+              <button class="mic-btn" id="micBtn" aria-pressed="false" aria-label="Hold to talk" title="Tap to talk">🎙️</button>
+              <textarea id="chatInput" placeholder="Type or tap the mic..." aria-label="Message to your exam senior" rows="1"></textarea>
+              <button class="send-btn" id="sendBtn" aria-label="Send message">➤</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Persistent Right Column (Desktop Dashboard Sidebar) -->
+      <div class="sidebar-column">
+        <!-- AI Stress Planner -->
+        <div class="card">
+          <h2><span class="emoji-3d">📊</span> AI Burnout & Exam Planner</h2>
+          <div class="field">
+            <label for="syllabusInput">Syllabus Completion (%)</label>
+            <input type="number" id="syllabusInput" placeholder="e.g. 75" min="0" max="100">
+          </div>
+          <div class="field">
+            <label for="targetScoreInput">Target Score (%)</label>
+            <input type="number" id="targetScoreInput" placeholder="e.g. 90" min="0" max="100">
+          </div>
+          <button class="btn-primary" onclick="generateBurnoutPlan()">Get Stress-Balanced Plan</button>
+          
+          <div style="margin-top:14px; font-size:12px; color:var(--text-dim);" id="aiPlannerOutput">
+            Enter study details to generate balance tips.
+          </div>
+        </div>
+
+        <!-- AI Flashcards Maker -->
+        <div class="card">
+          <h2><span class="emoji-3d">🃏</span> Smart Coping Flashcards</h2>
+          <div class="field">
+            <label for="flashcardTopic">What topic is stressing you today?</label>
+            <input type="text" id="flashcardTopic" placeholder="e.g., Physics Rotational Dynamics">
+          </div>
+          <button class="btn-secondary" onclick="generateFlashcards()" style="width:100%;">Create Coping Cards</button>
+          
+          <div id="flashcardContainer" style="margin-top:14px; display:grid; gap:8px;"></div>
+        </div>
+
+        <!-- Sound Mixer -->
+        <div class="card">
+          <h2><span class="emoji-3d">📻</span> Ambient Focus Mixer</h2>
+          <p style="font-size:11px; color:var(--text-faint); margin-top:-8px; margin-bottom:12px;">Soothing white noise & rainfall synthetic sounds to reduce exam tension.</p>
+          <div class="ambient-mixer">
+            <div class="mixer-track">
+              <span>🌧️ Rain Synth Noise</span>
+              <button id="synthRainBtn" onclick="toggleSynthSound('rain')">▶ Play</button>
+            </div>
+            <div class="mixer-track">
+              <span>🌊 Binaural Wave Noise</span>
+              <button id="synthWaveBtn" onclick="toggleSynthSound('wave')">▶ Play</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Badges & Streaks -->
+        <div class="card">
+          <h2><span class="emoji-3d">🏆</span> Achievement Badges</h2>
+          <div class="badge-container" id="badgesContainer">
+            <div class="badge-item active"><span class="emoji-3d">📝</span> Journal Starter</div>
+            <div class="badge-item active"><span class="emoji-3d">🧘</span> Meditator</div>
+            <div class="badge-item" id="badgeStreak"><span class="emoji-3d">🔥</span> 3-Day Green (Locked)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button data-screen="screen-checkin" aria-current="true">
+      <span class="nav-icon" aria-hidden="true">📝</span> Check-in
+    </button>
+    <button data-screen="screen-nervemap" aria-current="false">
+      <span class="nav-icon" aria-hidden="true">🗺️</span> Nerve Map
+    </button>
+    <button data-screen="screen-mindfulness" aria-current="false">
+      <span class="nav-icon" aria-hidden="true">🧘</span> Relax
+    </button>
+    <button data-screen="screen-insights" aria-current="false">
+      <span class="nav-icon" aria-hidden="true">📊</span> Insights
+    </button>
+    <button data-screen="screen-chat" aria-current="false">
+      <span class="nav-icon" aria-hidden="true">💬</span> Chat
+    </button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===================== STARFIELD CANVAS BACKGROUND =====================
+  const canvas = document.getElementById('starfieldCanvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initStars();
+  }
+
+  function initStars() {
+    stars = [];
+    const count = Math.floor((canvas.width * canvas.height) / 12000);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.6 + 0.1,
+        speed: Math.random() * 0.05 + 0.01
+      });
+    }
+  }
+
+  function animateStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(7, 9, 14, 1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    stars.forEach(star => {
+      ctx.fillStyle = `rgba(139, 92, 246, ${star.alpha})`;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fill();
+      
+      star.alpha += star.speed;
+      if (star.alpha > 0.85 || star.alpha < 0.1) {
+        star.speed = -star.speed;
+      }
+    });
+    requestAnimationFrame(animateStars);
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  animateStars();
+
+  // ===================== STATE =====================
+  const state = {
+    selectedMood: null,
+    voiceMode: false,
+    isSpeaking: false,
+    isListening: false,
+    currentMission: null,
+    missionTimer: null,
+    mindfulnessActive: false,
+    mindfulnessTimer: null,
+    voiceNarration: true,
+    localHistory: [],
+    audioNodes: {},
+    audioCtx: null,
+    vivaMode: false
+  };
+
+  // ===================== NAVIGATION =====================
+  const screens = document.querySelectorAll('.screen');
+  const navButtons = document.querySelectorAll('.bottom-nav button');
+
+  function showScreen(id) {
+    screens.forEach((s) => s.classList.toggle('active', s.id === id));
+    navButtons.forEach((b) => b.setAttribute('aria-current', String(b.dataset.screen === id)));
+    if (id === 'screen-nervemap') loadNerveMap();
+    if (id === 'screen-insights') loadInsights();
+  }
+
+  navButtons.forEach((btn) => {
+    btn.addEventListener('click', () => showScreen(btn.dataset.screen));
+  });
+
+  // ===================== MOOD DIAL =====================
+  const moodGroup = document.getElementById('moodGroup');
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mood-btn';
+    btn.textContent = i;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', 'false');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', `Mood ${i} out of 10`);
+    btn.addEventListener('click', () => {
+      state.selectedMood = i;
+      moodGroup.querySelectorAll('.mood-btn').forEach((b) => {
+        const active = b === btn;
+        b.setAttribute('aria-pressed', String(active));
+        b.setAttribute('aria-checked', String(active));
+      });
+    });
+    moodGroup.appendChild(btn);
+  }
+
+  // ===================== JOURNAL TEMPLATES =====================
+  window.loadJournalTemplate = function(type) {
+    const promptTextarea = document.getElementById('journalInput');
+    const templates = {
+      failed_mock: "I failed my mock exam paper today. I scored below my target percent. I should be able to do this but everything is ruined now...",
+      morning_anxiety: "I woke up with severe anxiety thinking about the final board exam date. I will fail, and everyone thinks I cannot clear the papers...",
+      peer_pressure: "They all think I will not score well. My parents expect high marks but I always mess up rotational mechanics. I am stupid."
+    };
+    promptTextarea.value = templates[type];
+    promptTextarea.dispatchEvent(new Event('input'));
+  };
+
+  const journalInput = document.getElementById('journalInput');
+  const charCount = document.getElementById('charCount');
+  journalInput.addEventListener('input', () => {
+    charCount.textContent = `${journalInput.value.length} / 2000`;
+  });
+
+  // ===================== PANIC BUTTON INTERACTION =====================
+  const panicBtn = document.getElementById('panicTriggerBtn');
+  panicBtn.addEventListener('click', () => {
+    showScreen('screen-mindfulness');
+    const activePlayerCard = document.getElementById('activePlayerCard');
+    const sessionListCard = document.getElementById('sessionListCard');
+    activeSessionData = SESSIONS['box'];
+    currentPlayerTitle.textContent = "1-Min Panic Rescue Box Breathing";
+    activeSessionData.duration = 60;
+    sessionListCard.style.display = 'none';
+    activePlayerCard.classList.add('active');
+    resetMindfulnessPlayer();
+    alert('🚨 Crisis Pause: Focus completely on the expand/shrink circle. Take a deep breath.');
+  });
+
+  // ===================== CHECK-IN SUBMIT =====================
+  const submitBtn = document.getElementById('submitCheckin');
+  const resultCard = document.getElementById('resultCard');
+  const receiptContainer = document.getElementById('receiptContainer');
+  const missionBoxCard = document.getElementById('missionBoxCard');
+
+  submitBtn.addEventListener('click', async () => {
+    const journal = journalInput.value.trim();
+
+    if (!state.selectedMood) {
+      alert('Please select a mood rating first.');
+      return;
+    }
+    if (!journal) {
+      alert('Please write a few words about your day.');
+      return;
+    }
+
+    if (checkCrisisLocally(journal)) {
+      crisisBanner.classList.add('show');
+      crisisBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      crisisBanner.classList.remove('show');
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Reading your entry...';
+
+    const daysLeftVal = document.getElementById('daysLeftInput').value;
+    const examTarget = document.getElementById('examSelect').value;
+    document.getElementById('daysLeftNum').textContent = daysLeftVal || '—';
+
+    try {
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mood: state.selectedMood,
+          journal,
+          subject: document.getElementById('subjectSelect').value,
+          examTarget,
+          daysLeft: daysLeftVal ? Number(daysLeftVal) : undefined
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Something went wrong.');
+      }
+
+      const data = await res.json();
+      renderResult(data);
+      
+      setTimeout(() => {
+        showScreen('screen-chat');
+        addBubble(`Senior: I noticed you logged a burnout score of ${data.burnoutScore}% (${data.burnoutLevel}) studying ${document.getElementById('subjectSelect').value} today. Let's talk about it. How are you feeling?`, 'senior');
+      }, 1500);
+
+      fetchAdaptiveMission(data.emotions, data.burnoutLevel);
+    } catch (e) {
+      receiptContainer.innerHTML = `<div class="card"><p style="color:var(--danger); font-size:13px;">Couldn't save your check-in: ${escapeHtml(e.message)}. Please try again.</p></div>`;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Log check-in';
+    }
+  });
+
+  function checkCrisisLocally(text) {
+    const lower = text.toLowerCase();
+    return CRISIS_SIGNS.some((sign) => lower.includes(sign));
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderResult(data) {
+    resultCard.style.display = 'block';
+
+    const num = document.getElementById('burnoutNum');
+    const lvl = document.getElementById('burnoutLvl');
+    const ring = document.getElementById('ringProgress');
+
+    num.textContent = data.burnoutScore;
+    lvl.textContent = data.burnoutLevel;
+
+    const circumference = 264;
+    const offset = circumference - (circumference * data.burnoutScore) / 100;
+    ring.setAttribute('stroke-dashoffset', String(offset));
+
+    const colorMap = { safe: 'var(--safe)', watch: 'var(--watch)', danger: 'var(--danger)' };
+    ring.setAttribute('stroke', colorMap[data.burnoutLevel] || 'var(--safe)');
+
+    const pillsWrap = document.getElementById('emotionPills');
+    pillsWrap.innerHTML = '';
+    (data.emotions || []).forEach((e) => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = `${formatEmotionLabel(e.emotion)} ${e.intensity}%`;
+      pillsWrap.appendChild(pill);
+    });
+    if (!data.emotions || data.emotions.length === 0) {
+      pillsWrap.innerHTML = '<span class="pill">Neutral</span>';
+    }
+
+    document.getElementById('triggerNote').textContent = data.triggerPattern || '';
+
+    receiptContainer.innerHTML = '';
+    if (data.receipt && data.receipt.text) {
+      receiptContainer.innerHTML = buildReceiptHTML(data.receipt);
+    }
+
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function formatEmotionLabel(key) {
+    const map = {
+      anxiety: 'Anxiety', selfDoubt: 'Self-doubt', exhaustion: 'Exhaustion',
+      comparison: 'Comparison', hopelessness: 'Hopelessness', determination: 'Determination',
+      neutral: 'Neutral'
+    };
+    return map[key] || key;
+  }
+
+  function buildReceiptHTML(receipt) {
+    const date = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `
+      <div class="receipt" role="note" aria-label="Resilience receipt">
+        <div class="r-head">RESILIENCE RECEIPT</div>
+        <div class="r-label">Pattern detected</div>
+        <div class="r-body">${escapeHtml(receipt.evidence.distortionLabel)}</div>
+        <div class="r-label">Evidence from your own history</div>
+        <div class="r-body">${escapeHtml(receipt.text)}</div>
+        <div class="r-foot">${escapeHtml(date)} · NerveIQ · Keep this</div>
+      </div>`;
+  }
+
+  // ===================== ADAPTIVE MISSION ENGINE =====================
+  async function fetchAdaptiveMission(emotions, burnoutLevel) {
+    try {
+      const types = ['breathing', 'journaling', 'movement', 'reframe', 'visualization'];
+      const randomType = types[Math.floor(Math.random() * types.length)];
+      const res = await fetch('/api/mission', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emotions, burnoutLevel, type: randomType })
+      });
+      const mission = await res.json();
+      state.currentMission = mission;
+
+      document.getElementById('missionType').textContent = mission.type;
+      document.getElementById('missionTitleText').textContent = mission.title;
+      
+      const list = document.getElementById('missionStepsList');
+      list.innerHTML = '';
+      mission.instructions.forEach(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        list.appendChild(li);
+      });
+      missionBoxCard.style.display = 'block';
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  const startMissionBtn = document.getElementById('startMissionBtn');
+  startMissionBtn.addEventListener('click', () => {
+    if (state.missionTimer) {
+      clearInterval(state.missionTimer);
+      state.missionTimer = null;
+      startMissionBtn.textContent = 'Start 4-Min Timer';
+      document.getElementById('missionTimerText').textContent = '04:00';
+      return;
+    }
+    
+    let timeRemaining = 240;
+    startMissionBtn.textContent = 'Reset Timer';
+    state.missionTimer = setInterval(() => {
+      timeRemaining--;
+      const mins = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
+      const secs = String(timeRemaining % 60).padStart(2, '0');
+      document.getElementById('missionTimerText').textContent = `${mins}:${secs}`;
+      
+      if (timeRemaining <= 0) {
+        clearInterval(state.missionTimer);
+        state.missionTimer = null;
+        alert(' 🎉 Mission Completed! Awesome job resetting.');
+        startMissionBtn.textContent = 'Mission Complete ✅';
+        startMissionBtn.disabled = true;
+      }
+    }, 1000);
+  });
+
+  // ===================== NERVE MAP =====================
+  async function loadNerveMap() {
+    const omrGrid = document.getElementById('omrGrid');
+    omrGrid.innerHTML = '<div class="empty-state">Loading your nerve map...</div>';
+
+    try {
+      const res = await fetch('/api/nervemap');
+      const data = await res.json();
+      renderOMRGrid(data.heatmap);
+      renderSubjectMatrix(data.subjectRanked);
+      document.getElementById('currentStreakNum').textContent = data.streaks.currentGreen;
+      document.getElementById('longestStreakNum').textContent = data.streaks.longestGreen;
+      
+      if (data.streaks.currentGreen >= 3) {
+        const streakBadge = document.getElementById('badgeStreak');
+        streakBadge.classList.add('active');
+      }
+    } catch (e) {
+      omrGrid.innerHTML = '<div class="empty-state">Couldn\'t load your nerve map right now.</div>';
+    }
+  }
+
+  function renderOMRGrid(heatmap) {
+    const omrGrid = document.getElementById('omrGrid');
+    omrGrid.innerHTML = '';
+
+    if (!heatmap || heatmap.length === 0) {
+      omrGrid.innerHTML = '<div class="empty-state">No entries yet. Log a check-in to fill your OMR.</div>';
+      return;
+    }
+
+    const byDate = {};
+    heatmap.forEach((h) => { byDate[h.date] = h; });
+
+    const slots = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      slots.push({ date: key, data: byDate[key] || null });
+    }
+
+    slots.forEach((slot) => {
+      const bubble = document.createElement('div');
+      bubble.className = 'omr-bubble';
+      if (slot.data) {
+        bubble.classList.add(`filled-${slot.data.level}`);
+        bubble.title = `${slot.date}: ${slot.data.level} (score ${slot.data.score ?? 'n/a'})`;
+        bubble.addEventListener('click', () => showOMRDetail(slot.date, slot.data));
+      } else {
+        bubble.classList.add('empty');
+        bubble.title = `${slot.date}: No entry`;
+        bubble.addEventListener('click', () => showOMRDetail(slot.date, null));
+      }
+      omrGrid.appendChild(bubble);
+    });
+  }
+
+  function showOMRDetail(date, data) {
+    const panel = document.getElementById('omrDetailPanel');
+    const detailDate = document.getElementById('detailDate');
+    const detailBurnout = document.getElementById('detailBurnout');
+    const detailBody = document.getElementById('detailBody');
+
+    panel.style.display = 'block';
+    detailDate.textContent = new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    if (data) {
+      detailBurnout.textContent = `Burnout: ${data.score ?? 0}% (${data.level})`;
+      detailBody.innerHTML = `<strong>Subject studied:</strong> ${escapeHtml(data.subject || 'None')}<br><em>Logged activity. Open the Chat section to discuss this day with your Exam Senior.</em>`;
+    } else {
+      detailBurnout.textContent = 'No entry logged';
+      detailBody.textContent = 'You did not perform a mental check-in on this day.';
+    }
+  }
+
+  function renderSubjectMatrix(ranked) {
+    const wrap = document.getElementById('subjectMatrixList');
+    wrap.innerHTML = '';
+
+    if (!ranked || ranked.length === 0) {
+      wrap.innerHTML = '<div class="empty-state">Log a few check-ins to build your matrix.</div>';
+      return;
+    }
+
+    ranked.forEach((row) => {
+      const div = document.createElement('div');
+      div.className = 'subject-bar-row';
+      div.innerHTML = `
+        <div class="sb-label"><span>${escapeHtml(row.subject)}</span><span>${row.avgScore}/100</span></div>
+        <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${row.avgScore}%; background:${barColor(row.avgScore)}"></div></div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  function barColor(score) {
+    if (score > 70) return 'var(--danger)';
+    if (score > 40) return 'var(--watch)';
+    return 'var(--safe)';
+  }
+
+  // ===================== MINDFULNESS PLAYER ENGINE =====================
+  const sessionListCard = document.getElementById('sessionListCard');
+  const activePlayerCard = document.getElementById('activePlayerCard');
+  const exitPlayerBtn = document.getElementById('exitPlayerBtn');
+  const controlSessionBtn = document.getElementById('controlSessionBtn');
+  const voiceNarrationBtn = document.getElementById('voiceNarrationBtn');
+  const breathingOrb = document.getElementById('breathingOrb');
+  const playerInstructionText = document.getElementById('playerInstructionText');
+  const playerTimerText = document.getElementById('playerTimerText');
+  const currentPlayerTitle = document.getElementById('currentPlayerTitle');
+
+  const SESSIONS = {
+    box: { title: 'Box Breathing', duration: 240, cycle: ['inhale', 'hold', 'exhale', 'hold'], times: [4, 4, 4, 4], instructions: ['Breathe in slowly...', 'Hold your breath...', 'Exhale slowly...', 'Hold...'] },
+    ground: { title: '5-4-3-2-1 Grounding', duration: 180, cycle: ['inhale', 'hold', 'exhale'], times: [5, 2, 5], instructions: ['Notice 5 things you see...', 'Gently notice and touch 4 things...', 'Exhale and ground...'] },
+    scan: { title: 'Body Scan Reset', duration: 300, cycle: ['inhale', 'hold', 'exhale'], times: [6, 2, 6], instructions: ['Focus on your neck and shoulders...', 'Release the physical tension...', 'Breathe out deep relaxation...'] }
+  };
+
+  let activeSessionData = null;
+  let activeCycleIdx = 0;
+  let phaseTimerVal = 0;
+
+  document.querySelectorAll('.session-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.session;
+      activeSessionData = SESSIONS[type];
+      
+      currentPlayerTitle.textContent = activeSessionData.title;
+      sessionListCard.style.display = 'none';
+      activePlayerCard.classList.add('active');
+      resetMindfulnessPlayer();
+    });
+  });
+
+  exitPlayerBtn.addEventListener('click', () => {
+    stopMindfulnessPlayer();
+    activePlayerCard.classList.remove('active');
+    sessionListCard.style.display = 'block';
+  });
+
+  voiceNarrationBtn.addEventListener('click', () => {
+    state.voiceNarration = !state.voiceNarration;
+    voiceNarrationBtn.textContent = `🔊 Voice Narration: ${state.voiceNarration ? 'ON' : 'OFF'}`;
+  });
+
+  function resetMindfulnessPlayer() {
+    stopMindfulnessPlayer();
+    playerTimerText.textContent = formatDuration(activeSessionData.duration);
+    playerInstructionText.textContent = 'Tap Start to Begin';
+    controlSessionBtn.textContent = 'Start Session';
+    breathingOrb.className = 'breathing-orb';
+    breathingOrb.textContent = 'Relax';
+  }
+
+  function stopMindfulnessPlayer() {
+    if (state.mindfulnessTimer) clearInterval(state.mindfulnessTimer);
+    state.mindfulnessTimer = null;
+    state.mindfulnessActive = false;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+  }
+
+  controlSessionBtn.addEventListener('click', () => {
+    if (state.mindfulnessActive) {
+      stopMindfulnessPlayer();
+      resetMindfulnessPlayer();
+      return;
+    }
+
+    state.mindfulnessActive = true;
+    controlSessionBtn.textContent = 'Pause Session';
+    
+    let totalSecs = activeSessionData.duration;
+    activeCycleIdx = 0;
+    phaseTimerVal = activeSessionData.times[activeCycleIdx];
+    
+    runBreathingCycle();
+
+    state.mindfulnessTimer = setInterval(() => {
+      totalSecs--;
+      phaseTimerVal--;
+      playerTimerText.textContent = formatDuration(totalSecs);
+
+      if (phaseTimerVal <= 0) {
+        activeCycleIdx = (activeCycleIdx + 1) % activeSessionData.cycle.length;
+        phaseTimerVal = activeSessionData.times[activeCycleIdx];
+        runBreathingCycle();
+      }
+
+      if (totalSecs <= 0) {
+        stopMindfulnessPlayer();
+        alert('Session finished successfully. You are grounded.');
+        resetMindfulnessPlayer();
+      }
+    }, 1000);
+  });
+
+  function runBreathingCycle() {
+    const cycleType = activeSessionData.cycle[activeCycleIdx];
+    const instr = activeSessionData.instructions[activeCycleIdx];
+    
+    breathingOrb.className = 'breathing-orb ' + cycleType;
+    breathingOrb.textContent = cycleType.toUpperCase();
+    playerInstructionText.textContent = instr;
+
+    if (state.voiceNarration && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(instr);
+      utt.rate = 0.85;
+      utt.lang = 'en-IN';
+      window.speechSynthesis.speak(utt);
+    }
+  }
+
+  function formatDuration(s) {
+    const m = String(Math.floor(s / 60)).padStart(2, '0');
+    const sec = String(s % 60).padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  // ===================== INSIGHTS GRAPH & STATS =====================
+  async function loadInsights() {
+    try {
+      const res = await fetch('/api/insights');
+      const data = await res.json();
+
+      document.getElementById('statCheckins').textContent = data.totalEntries;
+      
+      const validEntries = data.sparkline.filter(s => s.mood !== null);
+      if (validEntries.length > 0) {
+        const avgM = validEntries.reduce((a, b) => a + b.mood, 0) / validEntries.length;
+        const avgB = validEntries.reduce((a, b) => a + (b.burnout || 0), 0) / validEntries.length;
+        document.getElementById('statAvgMood').textContent = avgM.toFixed(1) + '/10';
+        document.getElementById('statBurnoutAvg').textContent = Math.round(avgB) + '%';
+      }
+
+      if (data.aiSummary) {
+        document.getElementById('aiInsightText').textContent = data.aiSummary;
+      }
+
+      renderSparkline(data.sparkline);
+
+      const distList = document.getElementById('distortionList');
+      if (data.distortionFrequency.length > 0) {
+        distList.innerHTML = data.distortionFrequency.map(d => `
+          <div class="subject-bar-row">
+            <div class="sb-label"><span>${escapeHtml(d.label)}</span><span>${d.count} times</span></div>
+            <div class="subject-bar-track"><div class="subject-bar-fill" style="width:${Math.min(d.count * 20, 100)}%; background:var(--accent-secondary)"></div></div>
+          </div>
+        `).join('');
+      } else {
+        distList.innerHTML = '<div class="empty-state">No distortion patterns detected yet. Good job!</div>';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderSparkline(points) {
+    const svg = document.getElementById('sparklineSvg');
+    const path = document.getElementById('sparklinePath');
+    const area = document.getElementById('sparklineArea');
+    
+    const width = 500;
+    const height = 120;
+    const padding = 10;
+
+    const validPoints = points.map((p, idx) => ({ ...p, xIdx: idx })).filter(p => p.mood !== null);
+    
+    if (validPoints.length < 2) {
+      path.setAttribute('d', '');
+      area.setAttribute('d', '');
+      return;
+    }
+
+    const stepX = width / 29;
+    const scaleY = (height - padding * 2) / 9;
+
+    let dPath = '';
+    let dArea = `M 0 ${height} `;
+
+    validPoints.forEach((p, index) => {
+      const x = p.xIdx * stepX;
+      const y = height - padding - (p.mood - 1) * scaleY;
+      
+      if (index === 0) {
+        dPath += `M ${x} ${y} `;
+        dArea += `L ${x} ${y} `;
+      } else {
+        dPath += `L ${x} ${y} `;
+        dArea += `L ${x} ${y} `;
+      }
+    });
+
+    const lastX = validPoints[validPoints.length - 1].xIdx * stepX;
+    dArea += `L ${lastX} ${height} Z`;
+
+    path.setAttribute('d', dPath);
+    area.setAttribute('d', dArea);
+  }
+
+  // ===================== CHAT & VIVA SIMULATION =====================
+  const chatLog = document.getElementById('chatLog');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  function addBubble(text, role) {
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = text;
+    chatLog.appendChild(bubble);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    return bubble;
+  }
+
+  function addTypingIndicator() {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble senior';
+    bubble.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+    chatLog.appendChild(bubble);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    return bubble;
+  }
+
+  async function sendMessage(text) {
+    if (!text || !text.trim()) return;
+    
+    let processedText = text.trim();
+    if (state.vivaMode) {
+      processedText = "[Viva Quiz Response]: " + processedText;
+    }
+    
+    addBubble(processedText, 'student');
+    chatInput.value = '';
+
+    const typingBubble = addTypingIndicator();
+    const daysLeftVal = document.getElementById('daysLeftInput').value;
+    const examTarget = document.getElementById('examSelect').value;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: processedText,
+          examTarget: state.vivaMode ? `resilience quiz viva simulator for ${examTarget}` : examTarget,
+          daysLeft: daysLeftVal ? Number(daysLeftVal) : null
+        })
+      });
+
+      if (!res.ok || !res.body) {
+        typingBubble.textContent = "Couldn't reach the server. Please try again.";
+        return;
+      }
+
+      typingBubble.textContent = '';
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split('\n\n');
+        buffer = events.pop();
+
+        for (const evt of events) {
+          if (!evt.startsWith('data: ')) continue;
+          const payload = JSON.parse(evt.slice(6));
+          if (payload.chunk) {
+            fullText += payload.chunk;
+            typingBubble.textContent = fullText;
+            chatLog.scrollTop = chatLog.scrollHeight;
+          }
+        }
+      }
+
+      if (state.voiceMode && fullText) {
+        speakText(fullText);
+      }
+    } catch (e) {
+      typingBubble.textContent = "Connection hiccup — I'm still here, try sending that again.";
+    }
+  }
+
+  window.sendQuickPrompt = function(promptText) {
+    sendMessage(promptText);
+  };
+
+  sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(chatInput.value);
+    }
+  });
+
+  window.toggleVivaMode = function() {
+    state.vivaMode = !state.vivaMode;
+    const btn = document.getElementById('vivaToggleBtn');
+    btn.textContent = state.vivaMode ? 'Turn OFF' : 'Turn ON';
+    btn.style.borderColor = state.vivaMode ? 'var(--safe)' : 'var(--border)';
+    btn.style.color = state.vivaMode ? 'var(--safe)' : 'var(--text-dim)';
+    
+    if (state.vivaMode) {
+      addBubble("Senior: Welcome to the Viva Simulator. Let's practice some tough topic questions to build your stress tolerance. Tell me which subject studied today you want to quiz?", "senior");
+    } else {
+      addBubble("Simulator Mode deactivated. Returning to regular peer guidance chat.", "system-note");
+    }
+  };
+
+  // ===================== VOICE: Web Speech API =====================
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceModeToggle = document.getElementById('voiceModeToggle');
+  const micBtn = document.getElementById('micBtn');
+  const voiceStatusText = document.getElementById('voiceStatusText');
+  const voiceStatusDot = document.getElementById('voiceStatusDot');
+  const voiceFallbackNote = document.getElementById('voiceFallbackNote');
+  const audioIndicator = document.getElementById('audioIndicator');
+
+  let recognition = null;
+  if (SpeechRecognitionAPI) {
+    recognition = new SpeechRecognitionAPI();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = () => {
+      state.isListening = true;
+      micBtn.setAttribute('aria-pressed', 'true');
+      audioIndicator.classList.add('active');
+      window.speechSynthesis && window.speechSynthesis.cancel();
+    };
+    recognition.onend = () => {
+      state.isListening = false;
+      micBtn.setAttribute('aria-pressed', 'false');
+      audioIndicator.classList.remove('active');
+    };
+    recognition.onerror = () => {
+      state.isListening = false;
+      micBtn.setAttribute('aria-pressed', 'false');
+      audioIndicator.classList.remove('active');
+    };
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      sendMessage(transcript);
+    };
+  } else {
+    voiceFallbackNote.style.display = 'block';
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (!recognition) {
+      voiceFallbackNote.style.display = 'block';
+      return;
+    }
+    if (state.isListening) {
+      recognition.stop();
+    } else {
+      try {
+        recognition.start();
+      } catch (e) { }
+    }
+  });
+
+  function speakText(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
+    utterance.lang = 'en-IN';
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find((v) => v.lang === 'en-IN') || voices.find((v) => v.lang.startsWith('en'));
+    if (preferred) utterance.voice = preferred;
+
+    utterance.onstart = () => { state.isSpeaking = true; voiceStatusDot.textContent = '🔊'; };
+    utterance.onend = () => { state.isSpeaking = false; voiceStatusDot.textContent = state.voiceMode ? '🔈' : '🔇'; };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  voiceModeToggle.addEventListener('click', () => {
+    state.voiceMode = !state.voiceMode;
+    voiceModeToggle.setAttribute('aria-pressed', String(state.voiceMode));
+    voiceModeToggle.textContent = state.voiceMode ? 'Switch to text' : 'Switch to voice';
+    voiceStatusText.textContent = state.voiceMode ? 'Voice mode' : 'Text mode';
+    voiceStatusDot.textContent = state.voiceMode ? '🔈' : '🔇';
+    if (!state.voiceMode) window.speechSynthesis && window.speechSynthesis.cancel();
+  });
+
+  // ===================== DYNAMIC STUDY PLANNER (AI) =====================
+  window.generateBurnoutPlan = async function() {
+    const syllabusPct = document.getElementById('syllabusInput').value;
+    const targetScore = document.getElementById('targetScoreInput').value;
+    const hoursStudied = document.getElementById('studyHoursInput').value;
+    const examTarget = document.getElementById('examSelect').value;
+
+    const outputDiv = document.getElementById('aiPlannerOutput');
+    outputDiv.textContent = "Asking Gemini for tailored tips...";
+
+    try {
+      const res = await fetch('/api/planner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ syllabusPct, targetScore, hoursStudied, examTarget })
+      });
+      const data = await res.json();
+      outputDiv.innerHTML = data.tips.map(tip => `<li>${escapeHtml(tip)}</li>`).join('');
+    } catch (e) {
+      outputDiv.textContent = "Failed to load stress plan. Keep study sessions under 2 hours!";
+    }
+  };
+
+  // ===================== COPING FLASHCARDS =====================
+  window.generateFlashcards = async function() {
+    const topic = document.getElementById('flashcardTopic').value.trim();
+    if (!topic) {
+      alert("Please enter a study topic.");
+      return;
+    }
+    const container = document.getElementById('flashcardContainer');
+    container.textContent = "Creating flashcards...";
+
+    try {
+      const res = await fetch('/api/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+      const data = await res.json();
+      container.innerHTML = '';
+      
+      data.flashcards.forEach(card => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'coaching-card';
+        cardDiv.style.cursor = 'pointer';
+        cardDiv.innerHTML = `<strong>❓ ${escapeHtml(card.front)}</strong><div style="font-size:11px; margin-top:6.5px; color:var(--safe);">Click to show reframe</div><p class="desc" style="display:none; margin-top:8px;">💡 ${escapeHtml(card.back)}</p>`;
+        cardDiv.addEventListener('click', () => {
+          const reframe = cardDiv.querySelector('.desc');
+          reframe.style.display = reframe.style.display === 'none' ? 'block' : 'none';
+        });
+        container.appendChild(cardDiv);
+      });
+    } catch (e) {
+      container.textContent = "Failed to construct cards. Rest 5 mins and return to complex topics.";
+    }
+  };
+
+  // ===================== AMBIENT SYNTH MIXER (HTML5 Audio Synthesis) =====================
+  window.toggleSynthSound = function(type) {
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const tracks = { rain: 'synthRainBtn', wave: 'synthWaveBtn' };
+    const btn = document.getElementById(tracks[type]);
+
+    if (state.audioNodes[type]) {
+      state.audioNodes[type].stop();
+      delete state.audioNodes[type];
+      btn.textContent = '▶ Play';
+      btn.classList.remove('active');
+      return;
+    }
+
+    const bufferSize = state.audioCtx.sampleRate * 2;
+    const noiseBuffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = state.audioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const filter = state.audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = type === 'rain' ? 400 : 150;
+
+    const gain = state.audioCtx.createGain();
+    gain.gain.value = 0.15;
+
+    whiteNoise.connect(filter);
+    filter.connect(gain);
+    gain.connect(state.audioCtx.destination);
+
+    whiteNoise.start();
+    state.audioNodes[type] = whiteNoise;
+    btn.textContent = '⏸ Stop';
+    btn.classList.add('active');
+  };
+
+})();
+</script>
+</body>
+</html>
