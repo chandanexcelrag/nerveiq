@@ -27,6 +27,9 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// Trust proxy headers for rate limiting behind reverse proxies (like Railway/Cloudflare)
+app.set('trust proxy', 1);
+
 // --- Security headers ---
 // CSP is relaxed for 'unsafe-inline' because the frontend is a single
 // static HTML file with inline <style>/<script> by design (no build step,

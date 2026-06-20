@@ -94,9 +94,67 @@ function validateChat(req, res, next) {
   next();
 }
 
+function validatePlanner(req, res, next) {
+  const { syllabusPct, targetScore, hoursStudied, examTarget } = req.body || {};
+
+  const errors = [];
+
+  const syllabusNum = Number(syllabusPct);
+  if (syllabusPct !== undefined && (!Number.isFinite(syllabusNum) || syllabusNum < 0 || syllabusNum > 100)) {
+    errors.push('syllabusPct must be a number between 0 and 100.');
+  }
+
+  const targetNum = Number(targetScore);
+  if (targetScore !== undefined && (!Number.isFinite(targetNum) || targetNum < 0 || targetNum > 100)) {
+    errors.push('targetScore must be a number between 0 and 100.');
+  }
+
+  const hoursNum = Number(hoursStudied);
+  if (hoursStudied !== undefined && (!Number.isFinite(hoursNum) || hoursNum < 0 || hoursNum > 24)) {
+    errors.push('hoursStudied must be a number between 0 and 24.');
+  }
+
+  if (examTarget !== undefined && !ALLOWED_EXAM_TARGETS.includes(examTarget)) {
+    errors.push(`examTarget must be one of: ${ALLOWED_EXAM_TARGETS.join(', ')}.`);
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: 'Invalid input', details: errors });
+  }
+
+  req.validatedBody = {
+    syllabusPct: syllabusPct !== undefined ? syllabusNum : 0,
+    targetScore: targetScore !== undefined ? targetNum : 0,
+    hoursStudied: hoursStudied !== undefined ? hoursNum : 0,
+    examTarget: examTarget || 'Other'
+  };
+
+  next();
+}
+
+function validateFlashcards(req, res, next) {
+  const { topic } = req.body || {};
+
+  if (!isPlainString(topic) || topic.trim().length === 0) {
+    return res.status(400).json({ error: 'topic is required and must be text.' });
+  }
+
+  if (topic.length > 100) {
+    return res.status(400).json({ error: 'topic must be under 100 characters.' });
+  }
+
+  req.validatedBody = {
+    topic: sanitiseText(topic)
+  };
+
+  next();
+}
+
 module.exports = {
   validateCheckin,
   validateChat,
+  validatePlanner,
+  validateFlashcards,
   sanitiseText,
   ALLOWED_SUBJECTS,
   ALLOWED_EXAM_TARGETS

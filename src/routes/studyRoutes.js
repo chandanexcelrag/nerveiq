@@ -6,14 +6,15 @@
 const express = require('express');
 const router = express.Router();
 const geminiService = require('../services/geminiService');
+const { validatePlanner, validateFlashcards } = require('../middleware/validate');
 
-router.post('/planner', async (req, res, next) => {
+router.post('/planner', validatePlanner, async (req, res, next) => {
   try {
-    const { syllabusPct, targetScore, hoursStudied, examTarget } = req.body;
+    const { syllabusPct, targetScore, hoursStudied, examTarget } = req.validatedBody;
     const tips = await geminiService.generateAIBurnoutPlanner(
-      Number(syllabusPct) || 0,
-      Number(targetScore) || 0,
-      Number(hoursStudied) || 0,
+      syllabusPct,
+      targetScore,
+      hoursStudied,
       examTarget
     );
     res.json({ tips });
@@ -22,9 +23,9 @@ router.post('/planner', async (req, res, next) => {
   }
 });
 
-router.post('/flashcards', async (req, res, next) => {
+router.post('/flashcards', validateFlashcards, async (req, res, next) => {
   try {
-    const { topic } = req.body;
+    const { topic } = req.validatedBody;
     const flashcards = await geminiService.generateAIStressFlashcards(topic);
     res.json({ flashcards });
   } catch (err) {

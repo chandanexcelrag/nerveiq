@@ -19,7 +19,7 @@ const { calculateBurnout } = require('../src/services/burnoutEngine');
 const { buildSubjectMatrix } = require('../src/services/subjectMatrix');
 const { buildEvidence } = require('../src/services/resilienceReceipt');
 const { pickMissionType } = require('../src/services/missionGenerator');
-const { sanitiseText } = require('../src/middleware/validate');
+const { sanitiseText, validatePlanner, validateFlashcards } = require('../src/middleware/validate');
 
 let passed = 0;
 let failed = 0;
@@ -272,6 +272,100 @@ test('returns empty string for non-string input', () => {
   assert.strictEqual(sanitiseText(null), '');
   assert.strictEqual(sanitiseText(undefined), '');
   assert.strictEqual(sanitiseText(42), '');
+});
+
+// ===================== validate (validatePlanner / validateFlashcards) =====================
+section('validate.js middleware');
+
+test('validatePlanner approves valid input', () => {
+  const req = {
+    body: {
+      syllabusPct: 80,
+      targetScore: 95,
+      hoursStudied: 8,
+      examTarget: 'JEE'
+    }
+  };
+  let nextCalled = false;
+  const res = {};
+  const next = () => { nextCalled = true; };
+
+  validatePlanner(req, res, next);
+  assert.strictEqual(nextCalled, true);
+  assert.strictEqual(req.validatedBody.syllabusPct, 80);
+  assert.strictEqual(req.validatedBody.targetScore, 95);
+  assert.strictEqual(req.validatedBody.hoursStudied, 8);
+  assert.strictEqual(req.validatedBody.examTarget, 'JEE');
+});
+
+test('validatePlanner rejects invalid syllabusPct', () => {
+  const req = { body: { syllabusPct: 150 } };
+  let statusSet = null;
+  let jsonSent = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json(j) {
+      jsonSent = j;
+    }
+  };
+  const next = () => {};
+
+  validatePlanner(req, res, next);
+  assert.strictEqual(statusSet, 400);
+  assert.ok(jsonSent.error);
+});
+
+test('validateFlashcards approves valid topic', () => {
+  const req = { body: { topic: '   Organic Chemistry Revision  ' } };
+  let nextCalled = false;
+  const res = {};
+  const next = () => { nextCalled = true; };
+
+  validateFlashcards(req, res, next);
+  assert.strictEqual(nextCalled, true);
+  assert.strictEqual(req.validatedBody.topic, 'Organic Chemistry Revision');
+});
+
+test('validateFlashcards rejects missing topic', () => {
+  const req = { body: {} };
+  let statusSet = null;
+  const res = {
+    status(s) {
+      statusSet = s;
+      return this;
+    },
+    json() {}
+  };
+  const next = () => {};
+
+  validateFlashcards(req, res, next);
+  assert.strictEqual(statusSet, 400);
+});
+
+// ===================== burnoutEngine edge cases =====================
+section('burnoutEngine edge cases');
+
+test('burnoutEngine handles entries with null or missing mood gracefully', () => {
+  const entries = [{ journal: 'No mood' }];
+  const result = calculateBurnout(entries);
+  // Default mood fallback is 5, which yields a calculated base score of 17
+  assert.strictEqual(result.score, 17);
+  assert.strictEqual(result.level, 'safe');
+});
+
+// ===================== distortionClassifier edge cases =====================
+section('distortionClassifier edge cases');
+
+test('detects multiple distortions in a single complex sentence', () => {
+  const text = "I am a complete failure and I know I will fail the NEET exam tomorrow, everything is ruined.";
+  const result = detectDistortions(text);
+  const types = result.map(d => d.type);
+  assert.ok(types.includes('selfLabeling'));
+  assert.ok(types.includes('fortuneTelling'));
+  assert.ok(types.includes('catastrophizing'));
 });
 
 // ===================== Summary =====================

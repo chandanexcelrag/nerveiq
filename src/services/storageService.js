@@ -21,6 +21,9 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'entries.json');
 
+// In-memory cache for entries to prevent redundant file reads
+let cachedEntries = null;
+
 function ensureStoreExists() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -31,11 +34,15 @@ function ensureStoreExists() {
 }
 
 function readEntries() {
+  if (cachedEntries !== null) {
+    return cachedEntries;
+  }
   ensureStoreExists();
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    cachedEntries = Array.isArray(parsed) ? parsed : [];
+    return cachedEntries;
   } catch (err) {
     // Corrupt or unreadable file -> fail safe to empty rather than crash the app.
     return [];
@@ -46,6 +53,7 @@ function writeEntry(entry) {
   const entries = readEntries();
   entries.push(entry);
   fs.writeFileSync(DATA_FILE, JSON.stringify(entries, null, 2), 'utf-8');
+  cachedEntries = entries; // Sync cache with new entry
   return entry;
 }
 
